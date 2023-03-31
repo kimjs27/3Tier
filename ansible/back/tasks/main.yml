@@ -1,0 +1,100 @@
+---
+# tasks file for back
+- name: Install Python3.9
+  apt:
+    name: python3.9
+    state: latest
+  become: yes
+
+- name: Install libmysqlclient-dev
+  apt:
+    name: libmysqlclient-dev
+    state: latest
+  become: yes
+
+- name: Install pip3.9
+  apt:
+    name: python3-pip
+    state: latest
+  become: yes
+
+- name: Install unzip
+  apt:
+    name: unzip
+    state: latest
+  become: yes
+
+- name: Install net-tools
+  apt:
+    name: net-tools
+    state: latest
+  become: yes
+
+- name: Copy project file
+  copy:
+    src: back.zip
+    dest: /tmp/back.zip
+    remote_src: no
+  become: yes
+
+- name: Create a directory if it does not exist
+  file:
+    path: /django
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: Unarchive project file
+  unarchive:
+    src: "/tmp/back.zip"
+    dest: "/django"
+    remote_src: yes
+  become: yes
+
+- name: Install specified python requirements
+  pip:
+    requirements: /django/requirements.txt
+  become: yes
+
+- name: Copy Files
+  template:
+    src: settings.py.j2
+    dest: /django/config/settings.py
+    remote_src: no
+  become: yes
+
+
+- name: Install gunicorn
+  pip:
+    name: gunicorn
+  become: yes
+
+- name: migrate
+  shell: |
+    python3 /django/manage.py migrate & wait
+  become: yes
+
+- name: Copy gunicorn conf file
+  copy:
+    src: gunicorn.py
+    dest: /django/gunicorn.py
+    remote_src: no
+  become: yes
+
+- name: check gunicorn is running
+  shell: |
+    netstat -anlp | grep :8000 | awk -F' ' '{print $7}' | cut -d'/' -f1
+  register: netstat_result
+  become: yes
+
+- name: kill gunicorn
+  shell: |
+    kill -9 {{ netstat_result.stdout }}
+  become: yes
+  when: netstat_result.stdout != ""
+
+- name: start
+  gunicorn:
+    app: 'config.wsgi:application'
+    conf: '/django/gunicorn.py'
+    chdir: '/django'

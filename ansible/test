@@ -1,0 +1,7 @@
+- name: Test
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: test
+      debug: 
+        msg : "{{ hostvars['mydb'].endpoint }}"

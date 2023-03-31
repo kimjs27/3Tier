@@ -1,0 +1,55 @@
+---
+# tasks file for front
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: latest
+  become: yes
+
+- name: Install unzip
+  apt:
+    name: unzip
+    state: latest
+  become: yes
+
+- name: Copy project file
+  copy:
+    src: build.zip
+    dest: /tmp/build.zip
+    remote_src: no
+  become: yes
+
+- name: Unarchive project file
+  unarchive:
+    src: "/tmp/build.zip"
+    dest: "/var/www/html"
+    remote_src: yes
+  become: yes
+
+- name: Copy Files
+  template:
+    src: main.ffa2e56f.js.j2
+    dest: /var/www/html/static/js/main.ffa2e56f.js
+    remote_src: no
+  become: yes
+
+- name: Copy Files
+  template:
+    src: main.ffa2e56f.js.map.j2
+    dest: /var/www/html/static/js/main.ffa2e56f.js.map
+    remote_src: no
+  become: yes
+
+- name: Copy Files
+  template:
+    src: default.j2
+    dest: /etc/nginx/sites-available/default
+    remote_src: no
+  become: yes
+
+- name: Start nginx
+  systemd:
+    name: nginx
+    state: restarted
+  become: yes
+
